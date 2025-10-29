@@ -7,6 +7,35 @@ x-common-env: &common-env
   EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
 
 services:
+  api-gateway:
+    build: ./gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      # Config Server
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+
+      # Eureka
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "true"
+      EUREKA_CLIENT_FETCH_REGISTRY: "true"
+
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+
+    networks:
+      - app-network
+
   eureka-server:
     build: ./eurekaserver
     container_name: eureka-server
