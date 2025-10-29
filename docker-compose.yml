@@ -1,0 +1,37 @@
+# version is deprecated, remove it
+x-common-env: &common-env
+  SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/demo?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+  SPRING_DATASOURCE_USERNAME: dbeaver_user
+  SPRING_DATASOURCE_PASSWORD: StrongPassword!
+
+services:
+  user-service:
+    build: ./userservice
+    ports:
+      - "8081:8081"
+    environment:
+      <<: *common-env
+    networks:
+      - app-network
+
+  product-service:
+    build: ./productservice
+    ports:
+      - "8082:8082"
+    environment:
+      <<: *common-env
+    networks:
+      - app-network
+
+  order-service:
+    build: ./orderservice
+    ports:
+      - "8083:8083"
+    environment:
+      <<: *common-env
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
