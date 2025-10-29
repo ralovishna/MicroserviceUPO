@@ -1,34 +1,84 @@
-# version is deprecated, remove it
+version: '3.9'
+
 x-common-env: &common-env
   SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/demo?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
   SPRING_DATASOURCE_USERNAME: dbeaver_user
   SPRING_DATASOURCE_PASSWORD: StrongPassword!
+  EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
 
 services:
+  eureka-server:
+    build: ./eurekaserver
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8761/" ]
+      interval: 10s
+      retries: 5
+
+  config-server:
+    build: ./configserver
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    networks:
+      - app-network
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8888/actuator/health" ]
+      interval: 10s
+      retries: 5
+
   user-service:
     build: ./userservice
+    container_name: user-service
     ports:
       - "8081:8081"
     environment:
       <<: *common-env
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
     networks:
       - app-network
 
   product-service:
     build: ./productservice
+    container_name: product-service
     ports:
       - "8082:8082"
     environment:
       <<: *common-env
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
     networks:
       - app-network
 
   order-service:
     build: ./orderservice
+    container_name: order-service
     ports:
       - "8083:8083"
     environment:
       <<: *common-env
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
     networks:
       - app-network
 
